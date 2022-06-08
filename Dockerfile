@@ -44,3 +44,7 @@ FROM install-tools AS latest
 
 VOLUME ["/project"]
 WORKDIR /project
+
+# parameters are expected to be passed to the docker run command, e.g.,
+# docker run -it --rm --mount type=bind,source=path/to/root,target=/project run_pahole:latest path/from/root/to/pahole.json
+ENTRYPOINT [ "python3", "/usr/opt/run_pahole.py" ]

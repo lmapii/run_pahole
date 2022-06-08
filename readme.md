@@ -50,7 +50,7 @@ The main ingredient to the script is the configuration file, which uses the `.js
 }
 ```
 
-> Heads-Up: **All paths must be specified relative to the configuration file**. No other path-dependencies need to be considered, the script should resolve all of them properly.
+> Heads-Up: **All paths must be specified relative to the configuration file**. No other path-dependencies need to be considered, the script should resolve all of them properly. Please also check the [`Dockerfile`](Dockerfile) and/or example invocation of `docker run` within the [`makefile`](makefile).
 
 ## Adding files
 

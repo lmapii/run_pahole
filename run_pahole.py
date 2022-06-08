@@ -167,10 +167,11 @@ def _find_elements(file_, ignores, lazy=False):
 
     items = {}
     for item in matches_search:
-        if item["post"]:
-            item["definition"] = f"{item['pre']}{{ {item['members']}}}\n{item['post']};"
-        else:
-            item["definition"] = f"{item['pre']}{{ {item['members']}}}{item['post']};"
+        item_def = f"{item['pre']}{{ {item['members']}}}{item['post']};"
+        last_curly = item_def.rfind("}")
+        if last_curly != -1:
+            item_def = f"{item_def[:last_curly]}\n{item_def[last_curly:]}"
+        item["definition"] = item_def
 
         name_ = (item["post"] if item["post"] else item["pre"]).strip()
         if not name_:
