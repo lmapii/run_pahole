@@ -1,6 +1,6 @@
 
-ROOT_DIR ?= $(CURDIR)/../..
-ARGS ?=
+ROOT_DIR ?= $(CURDIR)
+ARGS ?=--help
 
 docker-build :
 	docker build -f Dockerfile -t run_pahole:latest .
