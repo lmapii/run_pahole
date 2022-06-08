@@ -52,6 +52,8 @@ The main ingredient to the script is the configuration file, which uses the `.js
 
 > Heads-Up: **All paths must be specified relative to the configuration file**. No other path-dependencies need to be considered, the script should resolve all of them properly. Please also check the [`Dockerfile`](Dockerfile) and/or example invocation of `docker run` within the [`makefile`](makefile).
 
+Please check the `jsonschema` within the [python script](run_pahole.py) itself for a complete reference.
+
 ## Adding files
 
 The script uses a list of path as input for objects, any path is configured via the **required** field `paths`:
@@ -68,7 +70,7 @@ The script uses a list of path as input for objects, any path is configured via 
 }
 ```
 
-Each entry is another object with two properties `source` and `blacklist`, where only `source` is a **required** list of paths in glob-style (resolved by `python`'s [pathlib](https://docs.python.org/3/library/pathlib.html)). Th
+Each entry is another object with two properties `source` and `blacklist`, where only `source` is a **required** list of paths in glob-style (resolved by `python`'s [pathlib](https://docs.python.org/3/library/pathlib.html)).
 
 The script supports a list of files to be used as blacklist: Every filename from the list of files determined via the `source` field is matched against this list of names. Should the filename match then the file is excluded (these are plain filenames and not globs). In the above example *SomeObject.o" would be ignored.
 
