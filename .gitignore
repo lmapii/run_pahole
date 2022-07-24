@@ -17,3 +17,4 @@ docker
 test
 
 _bld
+run_pahole_plain.py
