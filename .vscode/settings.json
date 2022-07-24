@@ -1,0 +1,6 @@
+{
+  "python.linting.pylintPath": ".venv/bin/pylint",
+  "python.linting.pylintEnabled": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintArgs": ["--rcfile", "${workspaceFolder}/setup.cfg"]
+}
