@@ -17,7 +17,7 @@
 * Install all required packages:
 
 ```bash
-pip install -r path/to/tttpytilities/integrity/requirements.txt
+pip install -r path/to/run_pahole/requirements.txt
 ```
 
 > **Remark:** You can also run this tool in `docker`, check the provided [`Dockerfile`](Dockerfile). The provided [`makefile`](makefile) contains two targets that you can use to create the image and attach to a running container.
