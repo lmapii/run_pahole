@@ -1,6 +1,8 @@
 
-- [Pre-Requisites](#pre-requisites)
 - [Scope](#scope)
+- [Pre-Requisites](#pre-requisites)
+  - [Local installation](#local-installation)
+  - [Building the provided container](#building-the-provided-container)
 - [Usage](#usage)
   - [Adding files](#adding-files)
   - [Ignores](#ignores)
@@ -10,30 +12,51 @@
 - [Pitfalls and tips](#pitfalls-and-tips)
   - [Invalid dwarf data](#invalid-dwarf-data)
 
-# Pre-Requisites
-
-* This is a wrapper for [`pahole`](https://linux.die.net/man/1/pahole), which only runs on linux. Make sure that `pahole` is installed and in your `$PATH`.
-* Install `python >= 3.6.0` aswell as `pip`, it is typically pre-installed on your machine
-* Install all required packages:
-
-```bash
-pip install -r path/to/run_pahole/requirements.txt
-```
-
-> **Remark:** You can also run this tool in `docker`, check the provided [`Dockerfile`](Dockerfile). The provided [`makefile`](makefile) contains two targets that you can use to create the image and attach to a running container.
 
 # Scope
 
 This wrapper parses the output of `pahole` to determine whether structures can be optimized (see also [The lost art of struct padding](http://www.catb.org/esr/structure-packing/) and [this article](https://interrupt.memfault.com/blog/c-struct-padding-initialization?query=struct) on the Interrupt blog.)
 
-This is not a *all-usecases-considered* tool and it will probably never be. It might work for your usecase or it won't. Feel free to play around with the implementation and adapt it to your needs. This is also the reason why there's no installation script: The script is intended to be run directly from the command line using `python`. Future versions of this (currently unversioned) script might create a proper `python` module and/or `docker` setup.
+
+# Pre-Requisites
+
+This is a wrapper for [`pahole`](https://linux.die.net/man/1/pahole), which only runs on Linux. If you're running or installing `run_pahole` locally, make sure that `pahole` is installed and in your `$PATH`. Alternatively, you can use the provided `docker` setup to run the tool in a container, where `pahole` is already available.
+
+## Local installation
+
+To install `run_pahole` locally, install `python >= 3.6.0` with `pip` and use a virtual environment to install `run_pahole`:
+
+```bash
+$ pipenv --rm
+$ mkdir .venv
+$ pipenv install --dev
+$ pipenv shell
+$ pipenv install -e .
+```
+
+## Building the provided container
+
+The provided [`makefile`](makefile) contains the target `docker-build` to create the `run_pahole:latest` image using the [`Dockerfile`](Dockerfile) in the repository root. Assuming you have `make` installed, you can simply run:
+
+```bash
+$ make docker-build
+```
+
+Otherwise, use the command provided in the `makefile` target.
+
 
 # Usage
 
-All this wrapper needs is a configuration file which contains your project setup. Thus invoking the script is as easy as:
+All this wrapper needs is a configuration file which contains your project setup. You can invoke the script locally as follows:
 
 ```bash
-python /path/to/run_pahole.py /path/to/your-config.json
+run_pahole /path/to/your-config.json
+```
+
+`run_pahole` is available after you install it in your virtual environment, or within the Docker image. A commodity target `docker-run` is available in the provided [`makefile`](makefile), which executes `docker run` for the given `ARG`:
+
+```bash
+make docker-run ARGS=/path/to/your-config.json
 ```
 
 The main ingredient to the script is the configuration file, which uses the `.json` format. Let's use the following example as reference:
@@ -72,7 +95,7 @@ The script uses a list of path as input for objects, any path is configured via 
 
 Each entry is another object with two properties `source` and `blacklist`, where only `source` is a **required** list of paths in glob-style (resolved by `python`'s [pathlib](https://docs.python.org/3/library/pathlib.html)).
 
-The script supports a list of files to be used as blacklist: Every filename from the list of files determined via the `source` field is matched against this list of names. Should the filename match then the file is excluded (these are plain filenames and not globs). In the above example *SomeObject.o" would be ignored.
+The script supports a list of files to be used as blacklist: Every filename from the list of files determined via the `source` field is matched against this list of names. Should the filename match then the file is excluded (these are plain filenames and not globs). In the above example "SomeObject.o" would be ignored.
 
 ## Ignores
 
@@ -87,6 +110,7 @@ The optional property `ignores` can be used to define a list of regular expressi
 
 In the above example any structure that starts with `TcpIp` or any structure with a single underscore will be ignored by the script. This list can be extended, e.g., for vendor objects that cannot be modified or re-packed.
 
+
 # Execution options
 
 ## Lazy evaluation
@@ -95,12 +119,14 @@ A lazy execution (using the `--lazy` option) will execute `pahole` with the `--p
 
 > **Remark:** The resolved names can be different, e.g., for structures that do not use a `typedef`, in case a lazy execution is chosen. This should not stop you from using the tool. Simply extend your regular expressions for `(struct ){0,1}`.
 
+
 # Tool output
 
 In case any problems have been found, the tool will list the elements with problems at the end of the execution. Since the output of `pahole` is quite verbose, two dump files will be created in case of issues for further analysis:
 
 * `[json-basename]_dump_all.h` contains **all** relevant elements that could be extracted
 * `[json-basename]_dump_packable.h` contains all elements that need to be re-packed (including the full `pahole` output).
+
 
 # Pitfalls and tips
 

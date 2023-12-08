@@ -10,6 +10,8 @@ thumbs.db
 *.pb.go
 .vscode/ipch/**
 
+*.egg-info
+
 /target
 _notes.md
 artifacts

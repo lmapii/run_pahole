@@ -23,7 +23,7 @@ __V_LEVELS__ = {
     "error": logging.ERROR,
     "warning": logging.WARNING,
     "critical": logging.CRITICAL,
-    }
+}
 
 __SCHEMA__ = {
     "type": "object",
@@ -35,30 +35,23 @@ __SCHEMA__ = {
                 "type": "object",
                 "required": ["source"],
                 "properties": {
-                    "source": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                        },
-                    "blacklist": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                        },
-                    },
+                    "source": {"type": "array", "items": {"type": "string"}},
+                    "blacklist": {"type": "array", "items": {"type": "string"}},
                 },
             },
-        "ignore": {
-            "type": "array",
-            "items": {"type": "string"}
-            },
         },
-    }
+        "ignore": {"type": "array", "items": {"type": "string"}},
+    },
+}
 
 # regex for "pahole -a -A"
-__REX_SEARCH__ = re.compile(r'([\w\s_-]+){1}{((\n\s.+){1,}){1}\n}([\w\s_-]+){0,1};\n*')
+__REX_SEARCH__ = re.compile(r"([\w\s_-]+){1}{((\n\s.+){1,}){1}\n}([\w\s_-]+){0,1};\n*")
 # regex for "pahole -a -A --packable"
-__REX_DETAIL__ = re.compile(r'([\w/._-]+){1}(\(\d+\)+){0,1}\t(\d+){1}\t(\d+){1}\t(\d+){1}\n*')
+__REX_DETAIL__ = re.compile(
+    r"([\w/._-]+){1}(\(\d+\)+){0,1}\t(\d+){1}\t(\d+){1}\t(\d+){1}\n*"
+)
 # regex for bytes packing, deliberatly ignoring bit "packing" since pahole struggles with unnamed members
-__REX_TRY_PACK__ = re.compile(r'byte[s]{0,1} hole, try to pack')
+__REX_TRY_PACK__ = re.compile(r"byte[s]{0,1} hole, try to pack")
 
 __COUNT__ = 0
 
@@ -68,7 +61,7 @@ def _get_counter():
     Helper function to create a global counter for unnamed elements in dwarf files.
     """
     global __COUNT__  # pylint: disable=global-statement
-    __COUNT__ = __COUNT__+1
+    __COUNT__ = __COUNT__ + 1
     return __COUNT__
 
 
@@ -91,8 +84,10 @@ def __abort_with_err__(exc):
         return
     error_str = str(exc).split(":::")
     for lvl, str_ in enumerate(error_str):
-        indent = "    " * (lvl+1)
-        error_str[lvl] = indent + "|_ " + str_.strip().replace("\n", "\n" + indent + "   ")
+        indent = "    " * (lvl + 1)
+        error_str[lvl] = (
+            indent + "|_ " + str_.strip().replace("\n", "\n" + indent + "   ")
+        )
     error_str = "\n".join(error_str)
     logging.error("execution failed: \n%s", error_str)
     sys.exit(1)
@@ -107,7 +102,12 @@ def _find_paths(pattern):
     if os.path.isfile(pattern):
         return [pattern]
     path = pathlib.Path(pattern)
-    paths = [path.as_posix() for path in pathlib.Path(path.root).glob(str(pathlib.Path("").joinpath(*(path.parts))))]
+    paths = [
+        path.as_posix()
+        for path in pathlib.Path(path.root).glob(
+            str(pathlib.Path("").joinpath(*(path.parts)))
+        )
+    ]
     paths_ = []
     for path_ in paths:
         add_path = True
@@ -125,12 +125,18 @@ def _run_pahole(file_, args):
     This function aborts the execution if any error occurs while executing `pahole`.
     """
     with subprocess.Popen(
-            ["pahole", *args, file_], shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
-
+        ["pahole", *args, file_],
+        shell=False,
+        stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    ) as proc:
         stdout_, stderr_ = proc.communicate()
         ret = proc.wait()
         if ret:
-            __abort_with_err__(f"Command `pahole` returned with {ret}:::\n{__as_string__(stderr_)}")
+            __abort_with_err__(
+                f"Command `pahole` returned with {ret}:::\n{__as_string__(stderr_)}"
+            )
     return __as_string__(stdout_)
 
 
@@ -148,14 +154,18 @@ def _find_elements(file_, ignores, lazy=False):
         # that are not at the end of a structure definition, i.e., where re-sorting does not decrease the size
         # of the element. for such structures, however, adding a new member might trigger a violation in
         # the future, which is why this configuration is considered "lazy"
-        matches_detail = __REX_DETAIL__.findall(_run_pahole(file_, ["-a", "-A", "--packable"]))
+        matches_detail = __REX_DETAIL__.findall(
+            _run_pahole(file_, ["-a", "-A", "--packable"])
+        )
         matches_detail = {
             match[0]: {
                 "element": match[0],
                 "size_now": match[2],
                 "size_packed": match[3],
                 "size_saved": match[4],
-                } for match in matches_detail}
+            }
+            for match in matches_detail
+        }
 
     matches_search = __REX_SEARCH__.findall(_run_pahole(file_, ["-a", "-A"]))
     matches_search = matches_search = [
@@ -163,7 +173,9 @@ def _find_elements(file_, ignores, lazy=False):
             "pre": match[0],
             "members": match[1],
             "post": match[3],
-            } for match in matches_search]
+        }
+        for match in matches_search
+    ]
 
     items = {}
     for item in matches_search:
@@ -222,7 +234,7 @@ def _collect_elements(data, err_packable=True, lazy=False):
 
             if elements:
                 for name_, element in elements.items():
-                    if name_ in all_elements.keys():  # pylint: disable=consider-iterating-dictionary
+                    if name_ in all_elements:
                         all_elements[name_]["paths"].append(path_)
                     else:
                         all_elements[name_] = element
@@ -246,8 +258,15 @@ def _dump(items, filename):
     elements = []
     for name_, data_ in items.items():
         e_decl = data_["definition"]
-        e_list = "\n".join([" * " + item_ for item_ in json.dumps(data_["paths"], indent=2).split("\n")])
-        elements.append(block.format(element_name=name_, file_list=e_list, definition=e_decl))
+        e_list = "\n".join(
+            [
+                " * " + item_
+                for item_ in json.dumps(data_["paths"], indent=2).split("\n")
+            ]
+        )
+        elements.append(
+            block.format(element_name=name_, file_list=e_list, definition=e_decl)
+        )
 
     with open(filename, "w", encoding="utf-8") as file_:
         file_.write("\n\n".join(elements))
@@ -261,9 +280,13 @@ def __execute__(args):  # pylint: disable=too-many-locals,too-many-branches
     root_rel = os.path.relpath(os.path.dirname(os.path.abspath(args.json)))
 
     try:
-        subprocess.check_call(["pahole", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.check_call(
+            ["pahole", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
     except:  # pylint: disable=bare-except
-        __abort_with_err__("Failed to run `pahole --version`::: Please make sure that `pahole` is in your PATH")
+        __abort_with_err__(
+            "Failed to run `pahole --version`::: Please make sure that `pahole` is in your PATH"
+        )
 
     # load configuration and resolve paths
 
@@ -278,7 +301,10 @@ def __execute__(args):  # pylint: disable=too-many-locals,too-many-branches
         if "blacklist" not in item.keys():
             item["blacklist"] = []
 
-        item["source"] = [os.path.normpath(os.path.join(root_rel, path)).replace("\\", "/") for path in item["source"]]
+        item["source"] = [
+            os.path.normpath(os.path.join(root_rel, path)).replace("\\", "/")
+            for path in item["source"]
+        ]
 
     data["_ignore"] = []
     if "ignore" in data.keys():
@@ -287,7 +313,9 @@ def __execute__(args):  # pylint: disable=too-many-locals,too-many-branches
                 pat = re.compile(ignore)
                 data["_ignore"].append(pat)
             except Exception as exc:  # pylint: disable=broad-except
-                __abort_with_err__(f"Failed to compile '{ignore}' as regular expression:\n{str(exc)}")
+                __abort_with_err__(
+                    f"Failed to compile '{ignore}' as regular expression:\n{str(exc)}"
+                )
 
     # collect items
 
@@ -301,15 +329,24 @@ def __execute__(args):  # pylint: disable=too-many-locals,too-many-branches
             paths_.extend(_find_paths(path))
 
         filter_ = []
-        filter_.extend([path for path in paths_ if os.path.basename(path) in item["blacklist"]])
+        filter_.extend(
+            [path for path in paths_ if os.path.basename(path) in item["blacklist"]]
+        )
         paths = sorted(list(set(paths_) - set(filter_)))
 
         if not paths:
-            __abort_with_err__(f"Error while processing path {idx}::: No files or folders found for provided configuration")
+            __abort_with_err__(
+                f"Error while processing path {idx}::: No files or folders found for provided configuration"
+            )
 
-        logging.debug("the following folders and files will be checked: \n%s", json.dumps(paths, indent=2))
+        logging.debug(
+            "the following folders and files will be checked: \n%s",
+            json.dumps(paths, indent=2),
+        )
         if filter_:
-            logging.debug("skipping paths from blacklist: \n%s", json.dumps(filter_, indent=2))
+            logging.debug(
+                "skipping paths from blacklist: \n%s", json.dumps(filter_, indent=2)
+            )
 
         item["_paths"] = paths
 
@@ -332,7 +369,8 @@ def __execute__(args):  # pylint: disable=too-many-locals,too-many-branches
 
     if packables:
         __abort_with_err__(
-            f"The following elements should be re-packed (check {file_packable})\n{json.dumps(sorted(list(packables.keys())), indent=2)}")
+            f"The following elements should be re-packed (check {file_packable})\n{json.dumps(sorted(list(packables.keys())), indent=2)}"
+        )
 
     logging.info("")
     logging.info(":) success")
@@ -349,37 +387,41 @@ def __is_json_file__(parser_, arg):
     return arg
 
 
-if __name__ == "__main__":
-    PARSER_ = argparse.ArgumentParser(
-        description="cleanup script")
+def main():  # pylint: disable=missing-function-docstring
+    parser_ = argparse.ArgumentParser(description="cleanup script")
 
-    PARSER_.add_argument(
-        '-v', '--verbosity',
+    parser_.add_argument(
+        "-v",
+        "--verbosity",
         dest="verbosity",
         default="INFO",
-        help="verbosity level, one of %s" % list(__V_LEVELS__.keys()))
+        help="verbosity level, one of %s" % list(__V_LEVELS__.keys()),
+    )
 
-    PARSER_.add_argument(
-        'json',
+    parser_.add_argument(
+        "json",
         metavar="json-config",
-        type=lambda x: __is_json_file__(PARSER_, x),
-        help=".json file containing the configuration")
+        type=lambda x: __is_json_file__(parser_, x),
+        help=".json file containing the configuration",
+    )
 
-    PARSER_.add_argument(
-        '--lazy',
+    parser_.add_argument(
+        "--lazy",
         dest="lazy",
-        action='store_true',
-        help="if set, stops complaining about holes that could be converted to padding")
+        action="store_true",
+        help="if set, stops complaining about holes that could be converted to padding",
+    )
 
-    ARGS_ = PARSER_.parse_args()
+    args = parser_.parse_args()
 
-    if ARGS_.verbosity and not ARGS_.verbosity.lower() in __V_LEVELS__.keys():  # pylint: disable=consider-iterating-dictionary
-        PARSER_.error("\nverbosity has to be one of %s" % list(__V_LEVELS__.keys()))
+    if args.verbosity and not args.verbosity.lower() in __V_LEVELS__:
+        parser_.error("\nverbosity has to be one of %s" % list(__V_LEVELS__.keys()))
 
     coloredlogs.install(
-        level=__V_LEVELS__[ARGS_.verbosity.lower()],
-        fmt='%(asctime)s  %(levelname)-8s  %(message)s',
-        datefmt='(%H:%M:%S)')
+        level=__V_LEVELS__[args.verbosity.lower()],
+        fmt="%(asctime)s  %(levelname)-8s  %(message)s",
+        datefmt="(%H:%M:%S)",
+    )
 
     logging.info("executing %s ...", os.path.basename(__file__))
-    __execute__(ARGS_)
+    __execute__(args)
